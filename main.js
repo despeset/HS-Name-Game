@@ -190,10 +190,12 @@
             }
         }
 
-        var i = round.length - 8
-        while (i--) {
-          round.shift()
-        }
+        // limits each game to X people
+        // ----------------------------
+        // var i = round.length - 8
+        // while (i--) {
+        //   round.shift()
+        // }
 
         // randomize! see: http://scoundrelswiki.com/ScoundrelsPatter
         shuffle( round )
