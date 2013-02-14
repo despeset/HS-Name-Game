@@ -6,6 +6,7 @@
 
 // assumes jQuery
 !!!function( scope, $ ){
+    "use strict"; // but don't be dour.
 
     // for the facilitators
     $("a.batch-emails").remove()
@@ -14,6 +15,8 @@
      * Utilties
      */
 
+    // No Operation
+    function NOOP(){}
     // returns a namespaced CSS classname
     function classy ( className ) { return 'HS-namegame-' + className }
     // returns a new <div> string
@@ -33,6 +36,9 @@
        }
       return arr // should return something, but redundant -- array is mutated directly.
     }
+
+    // storage
+    var store = typeof localStorage === 'undefined' ? { getItem: NOOP, setItem: NOOP, removeItem: NOOP } : localStorage
 
     /**
      * CSS
@@ -57,7 +63,7 @@
         , batchCheckboxes: {
             margin: '10px 0'
         }
-        , board: { 
+        , board: {
             display: 'table'
           , 'font-size': '13px' // support long names like `Nicholas Bergson-Shilcock`
         }
@@ -91,7 +97,7 @@
         // start page ( welcome, intro + choose batches )
       , $mainPage  = $div('mainPage','<h1>Learn Your Hackers!</h1>').appendTo( $container )
         // checkboxes for selecting which batches to pull from for game
-      , $startContent = $div('startContent').appendTo( $mainPage ) 
+      , $startContent = $div('startContent').appendTo( $mainPage )
       , $batchCheckboxes = $('<ul class="'+classy('batchCheckboxes')+'"></ul>').css(styles.batchCheckboxes).appendTo( $startContent )
         // game board & containers
       , $board = $div('board')
@@ -100,23 +106,26 @@
         // buttons
       , $start = $('<input type="submit" value="start game" />').appendTo( $startContent )
       , $next  = $('<input type="submit" value="next" />').css(styles.nextButton)
+      , $reset = $('<input type="submit" value="reset" />').css(styles.nextButton)
+      , $selectBatches = $('<input type="submit" value="select different batches" />').css(styles.nextButton)
 
     /**
      * Init dataset from DOM, like: { "batch name": { "First Last": { pic: "imgSRC", right: 0, wrong: 0 } } }
      */
 
-    var HS = {}
+    var HS = scope.HS = JSON.parse( store.getItem('HS') ) || {}
 
     $('#batches').children().each(function(){
         // initialize dataset for this batch
         var $batch = $('ul', this).first()
         var batchName = $batch.prev().html()
-        var batch  = HS[batchName] = {}
         // add this batch to our checkboxes
         $batchCheckboxes.append('<li><input type="checkbox" name="batch" value="'+batchName+'" /><label>'+batchName+'</label></li>')
         // add each person to the batch
+        var batch = HS[batchName] = HS[batchName] || {}
         $('li.person', $batch).each(function(){
-            batch[$('.name a', this).html()] = { pic: $('img', this).attr('src'), right: 0, wrong: 0 }
+            var name = $('.name a', this).html()
+            batch[name] = batch[name] || { pic: $('img', this).attr('src'), right: 0, wrong: 0 }
         })
     })
 
@@ -133,7 +142,7 @@
     // abort the game on escape
     $( document ).on('keydown', function abort( e ){
         if( e.which === 27 ) // esc
-            $container.fadeTo( 250, 0, function(){ $(this).detach(); $(document).off('keydown', abort) })
+            $container.fadeTo( 250, 0, function(){ $(this).remove(); $(document).off('keydown', abort) })
     })
     // scroll to the top of the page if not already there
     $('html,body').animate({
@@ -142,12 +151,12 @@
 
     function setupGameState(){
         $startContent.hide()
-        $(this).detach()
+        $(this).detach() // start button
         $('.'+classy('scorecard')).hide()
 
         $mainPage.append( $board )
     }
-    
+
     function nameGame(){
             // all the hackers for this round
         var gameData = {}
@@ -168,15 +177,22 @@
         })
 
         // populate gameData
-        for( batch in HS ){
+        for( var batch in HS ){
             if( enabled.hasOwnProperty(batch) ){
-                for( person in HS[batch] ){
-                    if( HS[batch].hasOwnProperty(person) ){
+                for( var person in HS[batch] ){
+                    // don't load people who have been correctly guessed 3 times more than they've been incorrectly guessed ;/
+                    var difference = HS[batch][person].right - HS[batch][person].wrong
+                    if( HS[batch].hasOwnProperty(person) && difference < 3 ){
                         gameData[person] = HS[batch][person]
                         round.push(person)
                     }
                 }
             }
+        }
+
+        var i = round.length - 8
+        while (i--) {
+          round.shift()
         }
 
         // randomize! see: http://scoundrelswiki.com/ScoundrelsPatter
@@ -245,7 +261,6 @@
                 $next.detach()
                 renderBoard()
             })
-
         }
 
         /**
@@ -269,7 +284,7 @@
             if( $pics.find('img').length === 1 ){
                 match = { pic:   $pics.find('img').attr('src')
                         , $pic:  $pics.find('img')
-                        , name:  $names.find('div.'+classy('name')).html() 
+                        , name:  $names.find('div.'+classy('name')).html()
                         , $name: $names.find('div.'+classy('name')) }
                 return scoreMatch( match )
             }
@@ -302,8 +317,8 @@
                     }
                     // show result
                     $pics.append( $div('incorrect').append( '<img src="'+gameData[matches[i].name].pic+'" />' )
-                                                                                                  .append( $wrongName.prepend('✖ ').css(styles.wrongName) )
-                                                                                                  .append( matches[i].$name ) )
+                      .append( $wrongName.prepend('✖ ').css(styles.wrongName) )
+                      .append( matches[i].$name ) )
                 }
                 // remember this match for the full round score later
                 roundMatches.push( matches[i] )
@@ -321,10 +336,18 @@
                 if( roundMatches[i].win ) points++
             }
             // render scorecard & restart button
-            $board.append( $div('scorecard','<h2>You got '+points+' right and '+(roundMatches.length-points)+' wrong.</h2>') ).append( $start )
+
+            $('h1', $mainPage).first().remove()
+
+            var message = roundMatches.length ? '<h2>You got '+points+' right and '+(roundMatches.length-points)+' wrong.</h2>'
+                                              : '<h1>CONGRATULATIONS!</h1><h2>You know everybody in the selected batches.</h2>'
+
+            $board.append( $div('scorecard', message) )
+            if( roundMatches.length < 1 ) $board.append( $selectBatches ).append( $reset )
+            else $board.append( $start )
+            // save progress
+            store.setItem('HS', JSON.stringify(HS))
         }
-
     }
-
 
 }( window, jQuery );
