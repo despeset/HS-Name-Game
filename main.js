@@ -95,19 +95,23 @@
     // container for the whole shabang ( overlays page )
     var $container = $div('container')
         // start page ( welcome, intro + choose batches )
-      , $mainPage  = $div('mainPage','<h1>Learn Your Hackers!</h1>').appendTo( $container )
+      , $mainPage  = $div('mainPage').appendTo( $container )
+      , $title = $div('title','<h1>Learn Your Hackers!</h1>').appendTo( $mainPage )
         // checkboxes for selecting which batches to pull from for game
       , $startContent = $div('startContent').appendTo( $mainPage )
       , $batchCheckboxes = $('<ul class="'+classy('batchCheckboxes')+'"></ul>').css(styles.batchCheckboxes).appendTo( $startContent )
+        // button to return to selection stage
+      , $selectBatches = $('<input type="submit" value="select different batches" />').css(styles.nextButton)
         // game board & containers
       , $board = $div('board')
       , $pics  = $div('pics').appendTo($board)
       , $names = $div('names').appendTo($board).css('clear','both')
+        // end of round scorecard
+      , $scorecard = $div('scorecard')
         // buttons
       , $start = $('<input type="submit" value="start game" />').appendTo( $startContent )
       , $next  = $('<input type="submit" value="next" />').css(styles.nextButton)
       , $reset = $('<input type="submit" value="reset" />').css(styles.nextButton)
-      , $selectBatches = $('<input type="submit" value="select different batches" />').css(styles.nextButton)
 
     /**
      * Init dataset from DOM, like: { "batch name": { "First Last": { pic: "imgSRC", right: 0, wrong: 0 } } }
@@ -339,12 +343,12 @@
             }
             // render scorecard & restart button
 
-            $('h1', $mainPage).first().remove()
+            $title.detach()
 
             var message = roundMatches.length ? '<h2>You got '+points+' right and '+(roundMatches.length-points)+' wrong.</h2>'
                                               : '<h1>CONGRATULATIONS!</h1><h2>You know everybody in the selected batches.</h2>'
 
-            $board.append( $div('scorecard', message) )
+            $board.append( $scorecard.html( message ) )
             if( roundMatches.length < 1 ) $board.append( $selectBatches ).append( $reset )
             else $board.append( $start )
             // save progress
