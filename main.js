@@ -142,7 +142,9 @@
     // append container and fade it in
     $container.hide().appendTo($('body')).fadeTo( 250, 1 )
     // start the game when ready
-    $start.click( setupGameState ).click( nameGame )
+    $start.click( gameView ).click( nameGame ).click(function(){
+        $start.unbind('click', nameGame )
+    })
     // return to select view
     $selectBatches.click( batchSelectView )
     // abort the game on escape
