@@ -143,6 +143,8 @@
     $container.hide().appendTo($('body')).fadeTo( 250, 1 )
     // start the game when ready
     $start.click( setupGameState ).click( nameGame )
+    // return to select view
+    $selectBatches.click( batchSelectView )
     // abort the game on escape
     $( document ).on('keydown', function abort( e ){
         if( e.which === 27 ) // esc
@@ -153,12 +155,18 @@
         scrollTop: 0
     }, 250 )
 
-    function setupGameState(){
-        $startContent.hide()
-        $(this).detach() // start button
-        $('.'+classy('scorecard')).hide()
+    function gameView(){
+        $startContent.detach()
+        $start.detach()
+        $scorecard.detach()
+        $title.detach()
+        $mainPage.append( $title ).append( $board )
+    }
 
-        $mainPage.append( $board )
+    function batchSelectView(){
+        $board.detach()
+        $scorecard.detach()
+        $mainPage.append( $startContent ).append( $start )
     }
 
     function nameGame(){
@@ -175,35 +183,43 @@
             // stores the player matches during each set of 4
           , matches = []
 
-        // get enabled batches
-        $batchCheckboxes.find('input:checked').each(function(){
-            enabled[$(this).val()] = true
-        })
+        function setupGameState(){
+            enabled = {}
 
-        // populate gameData
-        for( var batch in HS ){
-            if( enabled.hasOwnProperty(batch) ){
-                for( var person in HS[batch] ){
-                    // don't load people who have been correctly guessed 3 times more than they've been incorrectly guessed ;/
-                    var difference = HS[batch][person].right - HS[batch][person].wrong
-                    if( HS[batch].hasOwnProperty(person) && difference < 3 ){
-                        gameData[person] = HS[batch][person]
-                        round.push(person)
+            // get enabled batches
+            $batchCheckboxes.find('input:checked').each(function(){
+                enabled[$(this).val()] = true
+            })
+
+            // populate gameData
+            for( var batch in HS ){
+                if( enabled.hasOwnProperty(batch) ){
+                    for( var person in HS[batch] ){
+                        // don't load people who have been matched ( right-wrong ) > 3 times
+                        var delta = HS[batch][person].right - HS[batch][person].wrong
+                        if( HS[batch].hasOwnProperty(person) && delta < 3 ){
+                            gameData[person] = HS[batch][person]
+                            round.push(person)
+                        }
                     }
                 }
             }
+
+            // limits each game to X people
+            // ----------------------------
+            // var i = round.length - 4
+            // while (i--) {
+            //   round.shift()
+            // }
+
+            // randomize! see: http://scoundrelswiki.com/ScoundrelsPatter
+            shuffle( round )
+
         }
 
-        // limits each game to X people
-        // ----------------------------
-        // var i = round.length - 8
-        // while (i--) {
-        //   round.shift()
-        // }
 
-        // randomize! see: http://scoundrelswiki.com/ScoundrelsPatter
-        shuffle( round )
         // render the gameboard
+        setupGameState()
         renderBoard()
 
         function renderBoard(){
