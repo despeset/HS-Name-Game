@@ -219,6 +219,25 @@
 
         }
 
+        // reset the set of matches, rendered when users have matched ( right-wrong ) > 3 times
+        $reset.click( resetGameState )
+
+        function resetGameState(){
+            for( var batch in HS ){
+                if( enabled.hasOwnProperty(batch) ){
+                    for( var person in HS[batch] ){
+                        HS[batch][person].right = 0
+                        HS[batch][person].wrong = 0
+                    }
+                }
+            }
+            store.setItem('HS', JSON.stringify(HS))
+            setupGameState()
+            gameView()
+            renderBoard()
+            $reset.detach()
+            $selectBatches.detach()
+        }
 
         // render the gameboard
         setupGameState()
