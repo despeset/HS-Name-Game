@@ -8,7 +8,7 @@ Just copy the code in `bookmarklet.js` into a bookmark ( or paste the source int
 
 ## Development
 
-To run Grunt for auto-bookmarklet generation:
+To automatically generate `bookmarklet.js` whenever main.js is saved:
 
 1. Install [Node.js](https://nodejs.org/)
 2. Install npm packages including Grunt and it's supporting packages with `npm install` on cli
