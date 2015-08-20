@@ -68,7 +68,11 @@
           , 'font-size': '13px' // support long names like `Nicholas Bergson-Shilcock`
         }
         , pics: {
-            margin: '20px 0 0'
+            margin: '20px 0 0',
+        }
+        , pic: {
+            width: '150px',
+            height: '150px'
         }
         , name: {
             border: '1px solid #aaa'
@@ -273,7 +277,7 @@
 
                 // show the pictures & names
                 for( var i = 0; i<len; i++ ){
-                    $pics.append( pics[i] )
+                    $pics.append( $(pics[i]).css(styles.pic) )
                     $names.append( names[i] )
                 }
 
